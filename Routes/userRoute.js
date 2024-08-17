@@ -42,6 +42,7 @@ userRoute.post('/updatemessage',userController.updateMessage)
 
 userRoute.post('/group/create',upload.single('image'),groupController.createGroup);
 userRoute.get('/group/getUsers/:id',groupController.getUsersInGroup);
+userRoute.post('/group/addUsers',groupController.AddUser_group);
 
 // userRoute.post('/group/addUser',groupController.addUserToGroup);
 // userRoute.post('/group/removeUser',groupController.removeUserFromGroup);
