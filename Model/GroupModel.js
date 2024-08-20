@@ -10,8 +10,7 @@ const groupSchema=mongoose.Schema({
    },
    image:{
      type:String,
-     required:true
-   },
+     },
    limit:{
      type:Number,
      required:true,
