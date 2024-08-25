@@ -1,13 +1,16 @@
 const cloudinary = require('../Config/Cloudinary');
 const GroupModel = require('../Model/GroupModel');
 const MemberModel = require('../Model/MembersModel');
-
+const MessageModel = require('../Model/GroupChatModel');
+// import {io} from '../index'
+const { io, groupNamespace } = require('../index');
+const { Socket } = require('socket.io');
 
 const createGroup = async (req, res) => {
     try {
         const { name, userId, limit } = req.body;
         const file = req.file;
-        console.log(name,userId,limit,file)
+        console.log(name, userId, limit, file)
 
         const result = await cloudinary.uploader.upload(file.path);
         const group = new GroupModel({
@@ -17,7 +20,7 @@ const createGroup = async (req, res) => {
             limit
         });
         const newGroup = await group.save();
-        res.status(201).json({message:'Group created successfully',success:true});
+        res.status(201).json({ message: 'Group created successfully', success: true });
 
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -29,14 +32,14 @@ const getUsersInGroup = async (req, res) => {
     try {
         const id = req.params.id;
         console.log(`Fetching group with ID: ${id}`);
-        
+
         // Find the group by ID
-        const group = await GroupModel.find({createrId:id});// Populate users if it's a reference
-        
+        const group = await GroupModel.find({ createrId: id });// Populate users if it's a reference
+
         if (!group) {
             return res.status(404).json({ message: 'Group not found' });
         }
-        
+
         // Respond with the group data
         res.status(200).json(group);
 
@@ -48,17 +51,17 @@ const getUsersInGroup = async (req, res) => {
 
 
 const AddUser_group = async (req, res) => {
-    try {   
+    try {
         // Destructuring groupId and users from the request body
         const { groupId, users } = req.body;
 
         // Find all members in the group
-        const GroupID=await GroupModel.find({_id: groupId});
+        const GroupID = await GroupModel.find({ _id: groupId });
         console.log();
 
         const existingMembers = await MemberModel.find({ groupId: groupId });
         // Check if the group has reached its limit
-        if(GroupID[0].limit<=existingMembers.length){
+        if (GroupID[0].limit <= existingMembers.length) {
             return res.status(400).json({ message: 'Group reached its limit' });
         }
 
@@ -95,19 +98,19 @@ const EditGroup = async (req, res) => {
 
 
         // Find the group by ID
-        const findGroup=await GroupModel.findById(id);
-        
+        const findGroup = await GroupModel.findById(id);
+
         if (!findGroup) {
             return res.status(404).json({ message: 'Group not found' });
-        }else{
+        } else {
             // Update the group
             findGroup.name = name;
             findGroup.limit = limit;
             await findGroup.save();
         }
-            
+
         // // Respond with the updated group data
-        res.status(200).json({success: true,message:'Group Update Successfully'});
+        res.status(200).json({ success: true, message: 'Group Update Successfully' });
 
     } catch (error) {
         console.error('Error fetching group:', error.message);
@@ -121,8 +124,8 @@ const DeleteGroup = async (req, res) => {
         const id = req.params.id;
 
         // Find the group by ID
-        const findGroup=await GroupModel.findByIdAndDelete(id);
-        res.status(200).json({message: 'Group deleted successfully'});
+        const findGroup = await GroupModel.findByIdAndDelete(id);
+        res.status(200).json({ message: 'Group deleted successfully' });
 
     } catch (error) {
         console.error('Error fetching group:', error.message);
@@ -133,34 +136,33 @@ const DeleteGroup = async (req, res) => {
 const JoinUserByLink = async (req, res) => {
     try {
         const id = req.params.id;
-
         // Find the group by ID
-        const findGroup=await GroupModel.findById(id);
-        
+        const findGroup = await GroupModel.findById({ _id: id });
+
         if (!findGroup) {
             return res.status(404).json({ message: 'Group not found' });
+        } else if (findGroup.createrId === req.body.userId) {
+            return res.status(200).json({ message: 'You are the creator of this group' });
         }
-        
-        const countMembers = await MemberModel.findById({groupId:id});
+
+        const countMembers = await MemberModel.find({ groupId: id });
         // Check if the group has reached its limit
-        if(findGroup[0].limit<=countMembers.length){
-            return res.status(400).json({ message: 'Group reached its limit' });
+        if (findGroup.limit <= countMembers.length) {
+            return res.status(200).json({ message: 'Group reached its limit' });
         }
-        
-        if(findGroup.createrId===req.user._id){
-            return res.status(400).json({ message: 'You are The creater of this group' });
-        };
-        
-        const checkMember = await MemberModel.findOne({groupId:id, userId:req.user._id});
-        
-        if(checkMember){
-            return res.status(400).json({ message: 'You are already a member of this group' });
+
+        const checkMember = await MemberModel.find({ groupId: id, userId: req.body.userId });
+
+        if (checkMember.length === 0) {
+            const newMember = new MemberModel({
+                groupId: id,
+                userId: req.body.userId
+            });
+            await newMember.save();
+            return res.status(201).json({ message: 'User joined successfully', success: true });
+        } else {
+            return res.status(200).json({ message: 'User already joined this group' });
         }
-        
-        const newMember = new MemberModel({
-            groupId: id,
-            userId: req.user._id
-        });
 
     } catch (error) {
         console.error('Error fetching group:', error.message);
@@ -170,11 +172,115 @@ const JoinUserByLink = async (req, res) => {
 
 
 
+const getAllGroups = async (req, res) => {
+    try {
+        const id = req.params.id;
+
+        // Find groups created by the user
+        const findGroup = await GroupModel.find({ createrId: id });
+
+        // Find all group memberships for the user
+        const findUserGroup = await MemberModel.find({ userId: id });
+
+        // Extract group IDs from the memberships
+        const groupIds = findUserGroup.map(member => member.groupId);
+
+        // Find groups where the user is a member
+        const findUserInGroup = await GroupModel.find({ _id: { $in: groupIds } });
+
+        if (findGroup.length > 0 || findUserInGroup.length > 0) {
+            return res.status(200).json({ message: 'Success', data: { findGroup, findUserInGroup } });
+        } else {
+            return res.status(404).json({ message: 'No groups found for this user' });
+        }
+    } catch (error) {
+        console.error('Error fetching groups:', error.message);
+        return res.status(500).json({ message: 'Internal Server Error' });
+    }
+};
+
+
+
+const getGroupInfo = async (req, res) => {
+    try {
+        const groupId = req.body.id;
+        const findGroup = await GroupModel.findById(groupId);
+        if (!findGroup) {
+            return res.status(404).json({ message: 'Group not found' });
+        }
+        return res.status(200).json({ findGroup });
+    } catch (error) {
+        console.error('Error fetching groups:', error.message);
+        return res.status(500).json({ message: 'Internal Server Error' });
+    }
+};
+
+
+
+const groupChatMessage = async (req, res) => {
+    try {
+        const { userId, groupId, message } = req.body;
+        // Save the message to the database
+        const SaveChat = new MessageModel({
+            userId,
+            groupId,
+            message
+        });
+        await SaveChat.save();
+        res.status(200).send(SaveChat)
+
+    } catch (error) {
+        console.error('Error sending message:', error.message);
+        return res.status(500).json({ message: 'Internal Server Error' });
+    }
+};
+
+const updateGroupMessage = async (req, res) => {
+    try {
+        const {message}=req.body;
+        const {id}=req.params;
+        // Find the message by ID
+        const findMessage = await MessageModel.findByIdAndUpdate(id, { message }, { new: true });
+        if (!findMessage) {
+            return res.status(404).json({ message: 'Message not found' });
+        }
+        return res.status(200).json({ message: 'Message updated successfully' });
+
+
+    } catch (error) {
+        console.error('Error sending message:', error.message);
+        return res.status(500).json({ message: 'Internal Server Error' });
+    }
+};
+
+
+const deleteGroupMessage = async (req, res) => {
+    try {
+        const {id}=req.params;
+        // Find the message by ID
+        const findMessage = await MessageModel.findByIdAndDelete(id);
+        if (!findMessage) {
+            return res.status(404).json({ message: 'Message not found' });
+        }
+        return res.status(200).json({ message: 'Message deleted successfully' });
+
+
+    } catch (error) {
+        console.error('Error sending message:', error.message);
+        return res.status(500).json({ message: 'Internal Server Error' });
+    }
+};
 module.exports = {
     createGroup,
     getUsersInGroup,
     AddUser_group,
     EditGroup,
     DeleteGroup,
-    JoinUserByLink
+    JoinUserByLink,
+    getAllGroups,
+    getGroupInfo,
+    groupChatMessage,
+    updateGroupMessage,
+    deleteGroupMessage
 }
+//     groupchats

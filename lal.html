@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Responsive WhatsApp Layout</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <button class="sidebar-toggle" id="sidebarToggle">
+                <i class="fas fa-bars"></i>
+            </button>
+            <div class="sidebar-content">
+                <ul class="user-list">
+                    <!-- User list items will go here -->
+                    <li class="user-item">User 1</li>
+                    <li class="user-item">User 2</li>
+                    <li class="user-item">User 3</li>
+                </ul>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Chat Header -->
+            <header class="chat-header">
+                <button class="back-button" id="backButton">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+                <div class="chat-info">
+                    <img src="user-image.jpg" alt="User" class="chat-user-image">
+                    <div class="chat-user-details">
+                        <h3>User Name</h3>
+                        <span class="user-status">Online</span>
+                    </div>
+                </div>
+                <button class="video-call-button">
+                    <i class="fas fa-video"></i>
+                </button>
+            </header>
+
+            <!-- Chat Body -->
+            <div class="chat-body">
+                <!-- Message items will go here -->
+                <div class="message sender-message">
+                    <img src="user-image.jpg" alt="User" class="message-user-image">
+                    <p>Hello, how are you?</p>
+                    <small>10:00 AM</small>
+                </div>
+                <div class="message receiver-message">
+                    <img src="user-image.jpg" alt="User" class="message-user-image">
+                    <p>I'm good, thanks!</p>
+                    <small>10:05 AM</small>
+                </div>
+            </div>
+
+            <!-- Chat Footer -->
+            <footer class="chat-footer">
+                <input type="text" placeholder="Type a message" class="message-input">
+                <button class="send-button">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+                <button class="attach-button">
+                    <i class="fas fa-paperclip"></i>
+                </button>
+            </footer>
+        </main>
+    </div>
+
+    <script>
+        // script.js
+document.getElementById('sidebarToggle').addEventListener('click', function () {
+    document.querySelector('.sidebar').classList.toggle('active');
+});
+
+    </script>
+</body>
+</html>
