@@ -122,12 +122,16 @@ const EditGroup = async (req, res) => {
 const DeleteGroup = async (req, res) => {
     try {
         const id = req.params.id;
-
+  
         // Find the group by ID
         const findGroup = await GroupModel.findByIdAndDelete(id);
+        // Delete all chat messages related to this group
+        await MessageModel.deleteMany({ groupId: id });
+        // Delete all members related to this group
+        await MemberModel.deleteMany({ groupId: id });
         res.status(200).json({ message: 'Group deleted successfully' });
 
-    } catch (error) {
+    } catch (error) {   
         console.error('Error fetching group:', error.message);
         res.status(500).json({ message: 'Internal Server Error' });
     }
@@ -258,7 +262,7 @@ const deleteGroupMessage = async (req, res) => {
     try {
         const {id}=req.params;
         // Find the message by ID
-        const findMessage = await MessageModel.findByIdAndDelete(id);
+        const findMessage = await MessageModel.findByIdAndDelete(id); 
         if (!findMessage) {
             return res.status(404).json({ message: 'Message not found' });
         }

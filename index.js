@@ -42,13 +42,12 @@ groupNamespace.on('connection', (socket) => {
 // fetch Old Messages
 
 socket.on('fetchOldMessages',async(data)=>{
-    const findAllMessages =await GroupChatModel.find({groupId: data.groupId}).populate('Group');
+    const findAllMessages =await GroupChatModel.find({groupId: data.groupId})
     socket.emit('loadOldMessages',findAllMessages);
-    console.log('Old Messages fetched successfully'+findAllMessages);
 })
     // When a new message is received
     socket.on('receiveMessage', async (message) => {
-        try {
+        try {   
 
            socket.broadcast.emit('newMessage',(message));
  
