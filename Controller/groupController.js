@@ -122,6 +122,7 @@ const EditGroup = async (req, res) => {
 const DeleteGroup = async (req, res) => {
     try {
         const id = req.params.id;
+        console.log(`Deleting group with ID: ${id}`);
   
         // Find the group by ID
         const findGroup = await GroupModel.findByIdAndDelete(id);
@@ -152,7 +153,7 @@ const JoinUserByLink = async (req, res) => {
         const countMembers = await MemberModel.find({ groupId: id });
         // Check if the group has reached its limit
         if (findGroup.limit <= countMembers.length) {
-            return res.status(200).json({ message: 'Group reached its limit' });
+            return res.status(400).json({ message: ' Sorry ! This Group is Full' });
         }
 
         const checkMember = await MemberModel.find({ groupId: id, userId: req.body.userId });
@@ -163,7 +164,7 @@ const JoinUserByLink = async (req, res) => {
                 userId: req.body.userId
             });
             await newMember.save();
-            return res.status(201).json({ message: 'User joined successfully', success: true });
+            return res.status(201).json({ message: 'You joined this group successfully', success: true });
         } else {
             return res.status(200).json({ message: 'User already joined this group' });
         }

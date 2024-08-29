@@ -5,6 +5,7 @@ const cloudinary = require('../Config/Cloudinary');
 const jwt = require('jsonwebtoken');
 const ChatModel = require('../Model/chatModel');
 const chatModel = require('../Model/chatModel');
+const MemberModel = require('../Model/MembersModel');
 
 // Function to generate tokens
 const generateTokens = (user) => {
@@ -196,6 +197,35 @@ const updateMessage = async (req, res) => {
 };
 
 
+const getAllUserSelect = async (req, res) => {
+  try {
+    const { id } = req.body; // Assuming `id` is an array of IDs
+
+    // Fetch users whose IDs are not in the provided list
+    const users = await User.find({ _id: { $nin: id } }).select('-password');
+
+    // Fetch members who are related to any of these users
+    const members = await MemberModel.find({ userId: { $in: users.map(user => user._id) } });
+
+    // Create a Set of userIds that are present in members
+    const memberUserIds = new Set(members.map(member => member.userId.toString()));
+
+    // Map through all users and create a new array with checked status
+    const usersWithCheckedStatus = users.map(user => ({
+      id: user._id,
+      name: user.name, // Include any other user fields you want to send
+      checked: memberUserIds.has(user._id.toString()) // Check if the user is in members
+    }));
+    console.log(usersWithCheckedStatus)
+    
+    // Return the formatted list of users
+    res.status(200).json(usersWithCheckedStatus);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send({ message: "Server error" });
+  }
+};
+
 
 module.exports = {
   Register,
@@ -205,6 +235,7 @@ module.exports = {
   SearchUser,
   chatUser,
   deleteMessage,
-  updateMessage
+  updateMessage,
+  getAllUserSelect
 
 };

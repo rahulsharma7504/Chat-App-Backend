@@ -32,6 +32,8 @@ userRoute.post('/login',userController.Login);
 
 userRoute.post('/users',userController.getAllUsers);
 userRoute.post('/user/info',userController.userInfo);
+userRoute.post('/users/select',userController.getAllUserSelect);
+
 userRoute.post('/user',userController.SearchUser)
 userRoute.post('/chatUser',userController.chatUser)
 userRoute.post('/message/:id',userController.deleteMessage)
@@ -46,7 +48,7 @@ userRoute.post('/group/create',upload.single('image'),groupController.createGrou
 userRoute.get('/group/getUsers/:id',groupController.getUsersInGroup);
 userRoute.post('/group/addUsers',groupController.AddUser_group);
 userRoute.post('/group/edit/:id',groupController.EditGroup);
-userRoute.post('/group/delete/:id',groupController.DeleteGroup);
+userRoute.delete('/group/delete/:id',groupController.DeleteGroup);
 
 userRoute.post('/group/join_user/:id',groupController.JoinUserByLink);
 // userRoute.post('/group/removeUser',groupController.removeUserFromGroup); 
